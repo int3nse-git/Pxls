@@ -1391,6 +1391,14 @@ const chat = (function() {
         };
       }
 
+      Array.from(targetPart[0].querySelectorAll('.content .coordinates')).forEach(elem => {
+        const args = ['x', 'y', 'scale', 'template'].reduce((arr, key) => {
+          arr.push(elem.dataset[key] !== undefined ? elem.dataset[key] : null); // Ensure null instead of undefined
+          return arr;
+        }, []);
+        elem.addEventListener('click', self._makeCoordinatesHandleClick(...args));
+      });
+
       const targetUsername = replyTarget[0].dataset.author;
       // Replies to you should ping you
       if (targetUsername === user.getUsername() && !hasPing) {
@@ -1429,21 +1437,8 @@ const chat = (function() {
       elem.classList.add('shadow-banned');
       elem.dataset.shadowBanned = 'true';
     },
-    _makeCoordinatesElement: (raw, x, y, scale, template, title) => {
-      let text = `(${x}, ${y}${scale != null ? `, ${scale}x` : ''})`;
-      if (template != null && template.length >= 11) { // we have a template, should probably make that known
-        let tmplName = decodeURIComponent(
-          settings.chat.links.templates.preferurls.get() !== true && title && title.trim()
-            ? title
-            : template
-        );
-        if (tmplName.length > 25) {
-          tmplName = `${tmplName.substr(0, 22)}...`;
-        }
-        text += ` (${__('template:')} ${tmplName})`;
-      }
-
-      function handleClick(e) {
+    _makeCoordinatesHandleClick: (x, y, scale, template) => {
+      return (e) => {
         e.preventDefault();
 
         if (template) {
@@ -1459,6 +1454,20 @@ const chat = (function() {
         } else {
           self.jump(parseFloat(x), parseFloat(y), parseFloat(scale));
         }
+      };
+    },
+    _makeCoordinatesElement: (raw, x, y, scale, template, title) => {
+      let text = `(${x}, ${y}${scale != null ? `, ${scale}x` : ''})`;
+      if (template != null && template.length >= 11) { // we have a template, should probably make that known
+        let tmplName = decodeURIComponent(
+          settings.chat.links.templates.preferurls.get() !== true && title && title.trim()
+            ? title
+            : template
+        );
+        if (tmplName.length > 25) {
+          tmplName = `${tmplName.substr(0, 22)}...`;
+        }
+        text += ` (${__('template:')} ${tmplName})`;
       }
 
       return crel('a', {
@@ -1472,7 +1481,7 @@ const chat = (function() {
           title
         },
         href: raw,
-        onclick: handleClick
+        onclick: self._makeCoordinatesHandleClick(x, y, scale, template)
       }, text);
     },
     _handleTemplateOverwriteAction: (action, linkElem) => {
